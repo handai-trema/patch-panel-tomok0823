@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# -*- coding: utf-8 -*-
 
 require 'rubygems'
 require 'bundler'
@@ -40,6 +41,43 @@ module PatchPanelApp
         delete_patch(dpid, port1, port2)
     end
   end
+
+  desc 'Creates a mirror'
+  arg_name 'dpid port mirror_port'
+  command :create_mirror do |c|
+    c.desc 'Location to find socket files'
+    c.flag [:S, :socket_dir], default_value: Trema::DEFAULT_SOCKET_DIR
+    c.action do |_global_options, options, args|
+      dpid = args[0].hex
+      port = args[1].to_i
+      mirror_port = args[2].to_i
+      Trema.trema_process('PatchPanel', options[:socket_dir]).controller.
+        create_mirroring(dpid, port, mirror_port)
+    end
+  end
+
+  desc 'Print patch and mirror port.'
+  arg_name 'dpid'
+  command :print do |c|
+    c.desc 'Location to find socket files'
+    c.flag [:S, :socket_dir], default_value: Trema::DEFAULT_SOCKET_DIR
+    c.action do |_global_options, options, args|
+      dpid = args[0].hex
+      array = Trema.trema_process('PatchPanel', options[:socket_dir]).controller.
+        print_port(dpid)
+
+      @patch = array[0]
+      @mirroring = array[1]
+
+      @patch[dpid].each do |port_a, port_b|
+        print("Patch： port",port_a, " <-> port", port_b, "\n")
+      end
+      @mirroring[dpid].each do |port, mirror|
+        print("Mirroring：port",mirror, " mirrors port", port, "\n")
+      end
+    end
+  end
+
 
   exit run(ARGV)
 end
